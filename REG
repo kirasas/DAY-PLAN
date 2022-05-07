@@ -1,5 +1,3 @@
-# DAY PLAN BOT
-First Telegram Bot
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
@@ -20,7 +18,9 @@ import time
 import random
 import uuid
 import datetime
+import math
 ###
+from Day_Plan_BASIS import *
 sys.path.append('C:/Users/User/Desktop/DAY_PLAN')
 from Useful_imports.Sqlite_imports import *
 from Useful_imports.Date_imports import *
@@ -103,7 +103,8 @@ class Authorization(StatesGroup):
     final = State()
 
 
-
+class BASA(StatesGroup):
+    one = State()
 ###
 # start_1: исполнение при команде /start
 @dp.message_handler(commands=['start'])
@@ -128,7 +129,7 @@ async def regAndAth(message: types.Message):
                         parse_mode=ParseMode.MARKDOWN, reply_markup=chance)
 
 
-# start_3: от пишет одно и то же, пока пользователь не исполнит команду /RegAth
+# start_3: бот пишет одно и то же, пока пользователь не исполнит команду /RegAth
 @dp.message_handler(state=Begin.start)
 async def repetition_endless(message: types.Message):
     username = message.from_user.username
@@ -673,14 +674,16 @@ async def all_reg_ok(callback_query: types.CallbackQuery, state: FSMContext):
                             [Mode] STRING, 
                             [Type] STRING, 
                             [View] STRING, 
+                            [Physics Cycle] STRING, 
                             [Name in DAY PLAN] STRING, 
                             [Description in DAY PLAN] STRING, 
                             [Description as element] STRING);''')
         await state.finish()
         conn.commit()
-
+        date_reg = day_reg.strftime('%d%m%Y')
         help_reg_list = []
-        list_with_date_in_words(day_reg, help_reg_list)
+        list_with_number_in_words(date_reg, help_reg_list)
+
         await asyncio.sleep(1.2)
         await bot.send_message(callback_query.from_user.id, text(emojize(f"🗓*Начало работы системы*🗓\n"
                                                                          f":{help_reg_list[0]}::{help_reg_list[1]}:▪"
@@ -690,6 +693,7 @@ async def all_reg_ok(callback_query: types.CallbackQuery, state: FSMContext):
         await Begin.regORaut.set()
         await asyncio.sleep(1)
         await bot.send_message(callback_query.from_user.id, regORaut_text, parse_mode=ParseMode.MARKDOWN, reply_markup=regORaut_board)
+
 
 
 
@@ -1240,11 +1244,13 @@ async def loag(callback_query: types.CallbackQuery, state: FSMContext):
                     parse_mode=ParseMode.MARKDOWN)
                 await message.answer((emojize("🔑АВТОРИЗАЦИЯ🔑")), reply_markup=ReplyKeyboardRemove())
                 await Authorization.next()
+                await state.finish()
                 async with state.proxy() as data:
-                    data['aut_mes'] = None
-                    data['mes_log'] = None
-                    data['mes_reg'] = None
-                    number = 0
+                    data['login'] = log
+                await BASA.one.set()
+                await bot.send_message(chat_id=callback_query.from_user.id, text='◼️*B A S I S | M E N U*◼️',
+                                       reply_markup=basis_kb, parse_mode=ParseMode.MARKDOWN)
+                number = 0
             else:
                 number += 1
                 await bot.edit_message_text(text((
@@ -1267,6 +1273,295 @@ async def loag(callback_query: types.CallbackQuery, state: FSMContext):
         await state.finish()
         await Begin.regORaut.set()
 
+
+
+###
+# basis_0
+@dp.callback_query_handler(lambda c: c.data == 'n_baz', state = BASA.one)
+async def act(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+    async with state.proxy() as data:
+        await bot.delete_message(chat_id= callback_query.from_user.id, message_id= data['begin_mes_from_bas_kb_id']-1)
+        await bot.send_message(chat_id= callback_query.from_user.id, text = '◼️*B A S I S | M E N U*◼️', reply_markup= basis_kb, parse_mode=ParseMode.MARKDOWN)
+###
+
+###
+@dp.message_handler(text=[activity_mes], state = BASA.one)
+async def process_me(message: types.Message, state: FSMContext):
+    baza = await message.reply(activity_text, reply_markup=activity_board)
+    await state.update_data(begin_mes_from_bas_kb_id=int(baza.message_id))
+
+@dp.callback_query_handler(lambda c: c.data == 'activity_aw', state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(activity_aw_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "activity_bwd", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(activity_bwd_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "activity_tsw", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(activity_tsw_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "activity_ud", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(activity_ud_mes, parse_mode=ParseMode.MARKDOWN)
+###
+
+
+###
+@dp.message_handler(text=[inform_mes], state = BASA.one)
+async def process_me(message: types.Message, state: FSMContext):
+    baza = await message.reply(inf_text, reply_markup=inf_board)
+    await state.update_data(begin_mes_from_bas_kb_id=int(baza.message_id))
+
+@dp.callback_query_handler(lambda c: c.data == "inf_back", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_text, parse_mode=ParseMode.MARKDOWN, reply_markup= inf_board)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_elements_in_Program", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_elements_in_Program_mes, parse_mode=ParseMode.MARKDOWN, reply_markup= inf_e_board)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_e_all_systems", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_e_all_systems_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_e_all_MTAL", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_e_all_MTAL_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_e_all_lists", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_e_all_lists_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_e_all_elements", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_e_all_elements_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_e_search", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_e_search_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_statistics", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_statistics_mes, parse_mode=ParseMode.MARKDOWN, reply_markup= inf_s_board)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_dayplan_for_future", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_dayplan_for_future_mes, parse_mode=ParseMode.MARKDOWN, reply_markup= inf_d_board)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_today_is", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_today_is_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_s_time_end", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_s_time_end_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_s_top_full_days_week", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_s_top_full_days_week_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_s_search_by_date", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_s_search_by_date_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_d_for_tomorrow", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_d_for_tomorrow_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_d_for_next_week", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_d_for_next_week_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "inf_d_for_one_date", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(inf_d_for_one_date_mes, parse_mode=ParseMode.MARKDOWN)
+###
+
+
+###
+@dp.message_handler(text=[settings_mes], state = BASA.one)
+async def process_me(message: types.Message, state: FSMContext):
+    baza = await message.reply(sett_text, reply_markup= sett_board)
+    await state.update_data(begin_mes_from_bas_kb_id=int(baza.message_id))
+
+@dp.callback_query_handler(lambda c: c.data == "sett_back", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_text, parse_mode=ParseMode.MARKDOWN, reply_markup= sett_board)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_custom_editing", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_custom_editing_mes, reply_markup= sett_cus_board, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_cus_appeal", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_cus_appeal_mes, parse_mode=ParseMode.MARKDOWN)
+
+
+@dp.callback_query_handler(lambda c: c.data == "sett_element_editing", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_element_editing_mes, reply_markup= sett_el_board, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_adding", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_adding_mes, reply_markup= sett_el_ad_board, parse_mode=ParseMode.MARKDOWN)
+
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ad_system", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ad_system_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ad_MTAL", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ad_MTAL_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ad_lists", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ad_lists_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ad_desires", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ad_desires_mes, parse_mode=ParseMode.MARKDOWN)
+
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_delete", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_delete_mes, reply_markup= sett_el_de_board, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_de_all_elements", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_de_all_elements_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_de_search", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_de_search_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_change", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_change_mes, reply_markup= sett_el_ch_2_board, parse_mode=ParseMode.MARKDOWN)
+
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_class", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_class_mes, reply_markup= sett_el_ch_2_class_board, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_class_Hierarchy", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_class_Hierarchy_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_class_time_values", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_class_time_values_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_class_mode", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_class_mode_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_class_type", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_class_type_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_class_view", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_class_view_mes, parse_mode=ParseMode.MARKDOWN)
+
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_des", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_des_mes, reply_markup= sett_el_ch_2_des_board, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_des_in_dayplan", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_des_in_dayplan_mes, parse_mode=ParseMode.MARKDOWN)
+
+@dp.callback_query_handler(lambda c: c.data == "sett_el_ch_2_des_as_element", state = BASA.one)
+async def act(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_text(sett_el_ch_2_des_as_element_mes, parse_mode=ParseMode.MARKDOWN)
+###
+
+###
+@dp.callback_query_handler(lambda c: c.data == "sett_profile", state = BASA.one)
+async def act(callback_query: types.CallbackQuery, state: FSMContext):
+    list_x = []
+    list_y = []
+    async with state.proxy() as data:
+        list_x.append(data['login'])
+
+        conn = sqlite3.connect(f'Day_Plan_db.db', check_same_thread=False)
+        cursor = conn.cursor()
+
+        cursor.execute('''SELECT Appeal FROM All_Users WHERE Login=?''', [data['login']])
+        app = cursor.fetchone()[0]
+        if app is None:
+            list_x.append(str('@' + callback_query.from_user.username))
+        else:
+            list_x.append(app)
+
+        cursor.execute('''SELECT Bot_ID FROM All_Users WHERE Login=?''', [data['login']])
+        id = cursor.fetchone()[0]
+        list_x.append(str(id))
+
+        cursor.execute('''SELECT Date_Reg FROM All_Users WHERE Login=?''', [data['login']])
+        time_r = cursor.fetchone()[0]
+
+        date1 = datetime.datetime.now()
+        date2 = datetime.datetime(int(time_r[0:4]), int(time_r[5:7]), int(time_r[8:10]), int(time_r[11:13]), int(time_r[14:16]))
+        delta = date1 - date2
+
+        number = delta.total_seconds()/86400
+        number = math.floor(number)
+        list_x.append(number)
+    list_with_date_in_words(list_x[3], list_y)
+    list_x[3] = list_y
+
+    if number > 9:
+        if '2' or '3' or '4' in str(number):
+            pr_mes = text('*Ваш профиль в* @RzemsBot*:*\n ➖➖➖➖➖➖➖➖➖➖➖➖➖\n🔊*Вы мой -* ', italic(f'{list_x[1]}'),
+                          '\n👤*Ваш логин: *', f'#{list_x[0]}',
+                          '\n🔑*Ваш ID в DAY PLAN: *', code(f'{list_x[2]}'),
+                          '\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n',
+                          emojize(f'♥️*Вы с нами уже: :{list_x[3][0]}::{list_x[3][1]}: дня*♥️'))
+        elif '1' in str(number):
+            pr_mes = text('*Ваш профиль в* @RzemsBot*:*\n ➖➖➖➖➖➖➖➖➖➖➖➖➖\n🔊*Вы мой -* ', italic(f'{list_x[1]}'),
+                          '\n👤*Ваш логин: *', f'#{list_x[0]}',
+                          '\n🔑*Ваш ID в DAY PLAN: *', code(f'{list_x[2]}'),
+                          '\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n',
+                          emojize(f'♥️*Вы с нами уже: :{list_x[3][0]}::{list_x[3][1]}: день*♥️'))
+        else:
+            pr_mes = text('*Ваш профиль в* @RzemsBot*:*\n ➖➖➖➖➖➖➖➖➖➖➖➖➖\n🔊*Вы мой -* ', italic(f'{list_x[1]}'),
+                          '\n👤*Ваш логин: *', f'#{list_x[0]}',
+                          '\n🔑*Ваш ID в DAY PLAN: *', code(f'{list_x[2]}'),
+                          '\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n',
+                          emojize(f'♥️*Вы с нами уже: :{list_x[3][0]}::{list_x[3][1]}: дней*♥️'))
+
+    else:
+        if number < 5 and number != 0 and number != 1:
+            pr_mes = text('*Ваш профиль в* @RzemsBot*:*\n ➖➖➖➖➖➖➖➖➖➖➖➖➖\n🔊*Вы мой -* ', italic(f'{list_x[1]}'),
+                          '\n👤*Ваш логин: *', f'#{list_x[0]}',
+                          '\n🔑*Ваш ID в DAY PLAN: *', code(f'{list_x[2]}'),
+                          '\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n',
+                          emojize(f'♥️*Вы с нами уже: :{list_x[3][0]}: дня*♥️'))
+        elif number == 1:
+            pr_mes = text('*Ваш профиль в* @RzemsBot*:*\n ➖➖➖➖➖➖➖➖➖➖➖➖➖\n🔊*Вы мой -* ', italic(f'{list_x[1]}'),
+                          '\n👤*Ваш логин: *', f'#{list_x[0]}',
+                          '\n🔑*Ваш ID в DAY PLAN: *', code(f'{list_x[2]}'),
+                          '\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n',
+                          emojize(f'♥️*Вы с нами уже: :{list_x[3][0]}: день*♥️'))
+        else:
+            pr_mes = text('*Ваш профиль в* @RzemsBot*:*\n ➖➖➖➖➖➖➖➖➖➖➖➖➖\n🔊*Вы мой -* ', italic(f'{list_x[1]}'),
+                          '\n👤*Ваш логин: *', f'#{list_x[0]}',
+                          '\n🔑*Ваш ID в DAY PLAN: *', code(f'{list_x[2]}'),
+                          '\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n',
+                          emojize(f'♥️*Вы с нами уже: :{list_x[3][0]}: дней*♥️'))
+    await callback_query.message.edit_text(pr_mes, parse_mode=ParseMode.MARKDOWN, reply_markup= sett_prof_board)
+###
+
+@dp.message_handler(text=[dayplan_mes], state = BASA.one)
+async def process_me(message: types.Message, state: FSMContext):
+    baza = await message.reply("DAY PLAN", reply_markup= dayplan_Z_kb)
+    await state.update_data(begin_mes_from_bas_kb_id=int(baza.message_id))
 
 
 if __name__ == '__main__':
