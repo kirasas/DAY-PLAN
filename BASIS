@@ -1,0 +1,195 @@
+# DAY-PLAN
+First Telegram Bot
+import asyncio
+from aiogram import Bot, types
+from aiogram.dispatcher import Dispatcher
+from aiogram.utils import executor
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, ReplyKeyboardRemove
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.utils.emoji import emojize
+from aiogram.types.message import ContentType
+from aiogram.utils.markdown import text, bold, italic, code, pre
+from aiogram.types import ParseMode, ChatActions
+from aiogram.dispatcher.filters import Text
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher import FSMContext
+import datetime
+import sqlite3
+import sys
+###
+sys.path.append('C:/Users/User/Desktop/DAY_PLAN')
+from Useful_imports.Sqlite_imports import *
+from Useful_imports.Date_imports import *
+from Useful_imports.Basis_imports import *
+from Useful_imports.Aiogram_imports import *
+from Useful_imports.APIES import *
+
+
+###
+#bots&dp
+bot = Bot(token='5239032475:AAF1mWfSQsBgIK6bu5UlRT__Cp8uWQeXYp4')
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
+
+
+###
+# buttons&boards
+back_mes = '🔙НАЗАД'
+
+# basis_kb
+activity_mes = '🔴\nАктивность'
+inform_mes = '🖲\nИнформация'
+settings_mes = '⚙️\nНайстройки'
+dayplan_mes = '✅DAY PLAN❌'
+basis_activity_but = KeyboardButton(activity_mes)
+basis_inform_but = KeyboardButton(inform_mes)
+basis_settings_but = KeyboardButton(settings_mes)
+basis_dayplan_but = KeyboardButton(dayplan_mes)
+basis_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).row(basis_inform_but, basis_activity_but,basis_settings_but).add(basis_dayplan_but)
+
+
+#dayplan_kb
+dayplan_Z_kb = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(back_mes, callback_data='n_baz'))
+
+
+#activaty_kb
+activity_text = 'Выберете необходимую активность:'
+activity_aw_mes = 'Абсолютный Выходной'
+activity_bwd_mes = 'Большой Рабочий День'
+activity_tsw_mes = 'Выходной для TS'
+activity_ud_mes = 'День Обновлений'
+activity_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(activity_aw_mes, callback_data='activity_aw')).\
+    add(InlineKeyboardButton(activity_bwd_mes, callback_data='activity_bwd')).\
+    add(InlineKeyboardButton(activity_tsw_mes, callback_data='activity_tsw')).\
+    add(InlineKeyboardButton(activity_ud_mes, callback_data='activity_ud')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'n_baz'))
+
+
+#information_kb
+inf_text = 'Выберете необходимый пункт информации:'
+inf_elements_in_Program_mes = 'Элементы Балльной Программы'
+inf_statistics_mes = 'Статистика'
+inf_dayplan_for_future_mes = 'Расписание Будущего'
+inf_today_is_mes = 'Сегодня...'
+inf_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(inf_elements_in_Program_mes, callback_data='inf_elements_in_Program')).\
+    add(InlineKeyboardButton(inf_statistics_mes, callback_data='inf_statistics')).\
+    add(InlineKeyboardButton(inf_dayplan_for_future_mes, callback_data='inf_dayplan_for_future')).\
+    add(InlineKeyboardButton(inf_today_is_mes, callback_data='inf_today_is')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'n_baz'))
+#information_kb/elements_in_Program
+inf_e_text = 'Выберете необходимый элемент:'
+inf_e_all_elements_mes = 'Все элементы'
+inf_e_all_systems_mes = 'Системы'
+inf_e_all_MTAL_mes = 'MTALS'
+inf_e_all_lists_mes = 'Запретные Листы'
+inf_e_all_desires_mes = 'Желания'
+inf_e_search_mes = 'Поиск элементов'
+inf_e_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(inf_e_all_elements_mes, callback_data='inf_e_all_elements')).\
+    add(InlineKeyboardButton(inf_e_all_systems_mes, callback_data='inf_e_all_systems')).\
+    add(InlineKeyboardButton(inf_e_all_MTAL_mes, callback_data='inf_e_all_MTAL')).\
+    add(InlineKeyboardButton(inf_e_all_lists_mes, callback_data='inf_e_all_lists')).\
+    add(InlineKeyboardButton(inf_e_all_desires_mes, callback_data='inf_e_all_desires')).\
+    add(InlineKeyboardButton(inf_e_search_mes, callback_data='inf_e_search')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'inf_back'))
+#information_kb/statistics
+inf_s_text = 'Выберете необходимый элемент статистики:'
+inf_s_top_full_days_week_mes = 'Топ полных дней'
+inf_s_time_end_mes = 'Время завершения дел'
+inf_s_search_by_date_mes = 'Поиск даты'
+inf_s_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(inf_s_top_full_days_week_mes, callback_data='inf_s_top_full_days_week')).\
+    add(InlineKeyboardButton(inf_s_time_end_mes, callback_data='inf_s_time_end')).\
+    add(InlineKeyboardButton(inf_s_search_by_date_mes, callback_data='inf_s_search_by_date')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'inf_back'))
+#information_kb/dayplan_for_future
+inf_d_text = 'Выберете необходимый элемент будущего DAY PLAN:'
+inf_d_for_tomorrow_mes = 'DAY PLAN для завтра'
+inf_d_for_next_week_mes = 'DAY PLAN для следующей недели'
+inf_d_for_one_date_mes = 'DAY PLAN для кокретной даты'
+inf_d_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(inf_d_for_tomorrow_mes, callback_data='inf_d_for_tomorrow')).\
+    add(InlineKeyboardButton(inf_d_for_next_week_mes, callback_data='inf_d_for_next_week')).\
+    add(InlineKeyboardButton(inf_d_for_one_date_mes, callback_data='inf_d_for_one_date')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'inf_back'))
+
+
+#settings_kb
+sett_text = 'Выберете необходимый элемент настроек:'
+sett_custom_editing_mes = 'Кастомное редактирование'
+sett_profile_mes = 'Профиль'
+sett_element_editing_mes = 'Редактирование элементов'
+sett_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_profile_mes, callback_data='sett_profile')).\
+    add(InlineKeyboardButton(sett_custom_editing_mes, callback_data='sett_custom_editing')).\
+    add(InlineKeyboardButton(sett_element_editing_mes, callback_data='sett_element_editing')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'n_baz'))
+#settings_kb/Custom_editing
+sett_cus_text = 'Выберете необходимый элемент настроек:'
+sett_cus_appeal_mes = 'Обращение'
+sett_cus_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_cus_appeal_mes, callback_data='sett_cus_appeal')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_back'))
+#settings_kb/Profile
+sett_prof_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(back_mes, callback_data='sett_back'))
+#settings_kb/Element_editing
+sett_el_text = 'Выберете необходимый элемент редактирования:'
+sett_el_adding_mes = 'Добавить элемент'
+sett_el_change_mes = 'Изменить элемент'
+sett_el_delete_mes = 'Удалить элемент'
+sett_el_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_el_change_mes, callback_data='sett_el_change')).\
+    add(InlineKeyboardButton(sett_el_adding_mes, callback_data='sett_el_adding')).\
+    add(InlineKeyboardButton(sett_el_delete_mes, callback_data='sett_el_delete')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_back'))
+#settings_kb/Element_editing/adding
+sett_el_ad_text = 'Выберете необходимый тип элемента для добавления:'
+sett_el_ad_system_mes = 'Система'
+sett_el_ad_MTAL_mes = 'MTAL'
+sett_el_ad_lists_mes = 'Запретный Лист'
+sett_el_ad_desires_mes = 'Желание'
+sett_el_ad_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_el_ad_system_mes, callback_data='sett_el_ad_system')).\
+    add(InlineKeyboardButton(sett_el_ad_MTAL_mes, callback_data='sett_el_ad_MTAL')).\
+    add(InlineKeyboardButton(sett_el_ad_lists_mes, callback_data='sett_el_ad_lists')).\
+    add(InlineKeyboardButton(sett_el_ad_desires_mes, callback_data='sett_el_ad_desires')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_element_editing'))
+#settings_kb/Element_editing/delete
+sett_el_de_text = 'Выберете необходимый тип элемента для удаления:'
+sett_el_de_all_elements_mes = 'Все элементы'
+sett_el_de_search_mes = 'Поиск необходимого элемента'
+sett_el_de_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_el_de_all_elements_mes, callback_data='sett_el_de_all_elements')).\
+    add(InlineKeyboardButton(sett_el_de_search_mes, callback_data='sett_el_de_search')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_element_editing'))
+
+
+#settings_kb/Element_editing/change
+sett_el_ch_text = 'Поиск:'
+sett_el_ch_search_mes = 'Найти конкретный элемент'
+sett_el_ch_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_el_ch_search_mes, callback_data='sett_el_ch_search')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_element_editing'))
+
+
+#settings_kb/Element_editing/change_2
+sett_el_ch_2_text = 'Выберете одну группу редактирования:'
+sett_el_ch_2_class_mes = 'Изменить классификацию'
+sett_el_ch_2_des_mes = 'Изменить описание'
+sett_el_ch_2_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_el_ch_2_class_mes, callback_data='sett_el_ch_2_class')).\
+    add(InlineKeyboardButton(sett_el_ch_2_des_mes, callback_data='sett_el_ch_2_des')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_element_editing'))
+#settings_kb/Element_editing/change_2/class
+sett_el_ch_2_class_text = 'Выберете необходимый тип классификации элемента:'
+sett_el_ch_2_class_Hierarchy_mes = 'Изменить иерархию'
+sett_el_ch_2_class_time_values_mes = 'Изменить значение времени'
+sett_el_ch_2_class_mode_mes = 'Изменить режим'
+sett_el_ch_2_class_type_mes = 'Изменить тип'
+sett_el_ch_2_class_view_mes = 'Изменить вид'
+sett_el_ch_2_class_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_el_ch_2_class_Hierarchy_mes, callback_data='sett_el_ch_2_class_Hierarchy')).\
+    add(InlineKeyboardButton(sett_el_ch_2_class_time_values_mes, callback_data='sett_el_ch_2_class_time_values')).\
+    add(InlineKeyboardButton(sett_el_ch_2_class_mode_mes, callback_data='sett_el_ch_2_class_mode')).\
+    add(InlineKeyboardButton(sett_el_ch_2_class_type_mes, callback_data='sett_el_ch_2_class_type')).\
+    add(InlineKeyboardButton(sett_el_ch_2_class_view_mes, callback_data='sett_el_ch_2_class_view')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_el_change'))
+#settings_kb/Element_editing/change_2/des
+sett_el_ch_2_des_text = 'Выберете, где требуется изменение описания элемента:'
+sett_el_ch_2_des_in_dayplan_mes = 'Изменить описание в DAY PLAN'
+sett_el_ch_2_des_as_element_mes = 'Изменить описание как элемента'
+sett_el_ch_2_des_board = InlineKeyboardMarkup(resize_keyboard=True).add(InlineKeyboardButton(sett_el_ch_2_des_in_dayplan_mes, callback_data='sett_el_ch_2_des_in_dayplan')).\
+    add(InlineKeyboardButton(sett_el_ch_2_des_as_element_mes, callback_data='sett_el_ch_2_des_as_element')).\
+    add(InlineKeyboardButton(back_mes, callback_data= 'sett_el_change'))
+
+#if __name__ == '__main__':
+    #executor.start_polling(dp)
